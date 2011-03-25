@@ -89,7 +89,7 @@ if (1)
 				throw Error('EOF while decoding instruction');
 			return b;
 		}
-		var decodeFields = function(i)
+		var decodeFields = function(i,op)
 		{
 			var b;
 			var modRM = null;
@@ -123,7 +123,8 @@ if (1)
 				b = checkGetByte();
 				imm |= b << (n*8);
 			}
-			return {prefixes: prefixes, modRM: modRM, SIB: SIB, disp: disp, imm: imm};
+			return {opcode:op, prefixes: prefixes, modRM: modRM, SIB: SIB,
+			        disp: disp, imm: imm};
 		}
 		var b;
 		
@@ -144,8 +145,9 @@ if (1)
 				{
 					var inst = jsx86.instruction.B1Instructions[b];
 					if (inst === undefined)
-						throw Error('Unknown instruction: '+b);
-					return decodeFields(inst);
+						throw Error('Unknown instruction: 0x'+
+						            b.toString(16));
+					return decodeFields(inst,b);
 				}
 				b = checkGetByte();
 				var opcode = b;
@@ -154,9 +156,10 @@ if (1)
 					b = checkGetByte();
 					opcode = (opcode << 8) | b;
 				}
+				var opstr = '0x0F'+opcode.toString(16);
 				var insts = jsx86.instruction.B23Instructions[opcode];
 				if (insts == undefined)
-					throw Error('Unknown instruction: '+b);
+					throw Error('Unknown instruction: '+opstr);
 				var inst = insts[0];
 				if ((pgroups[3] == 0x66) && (insts[1] != undefined))
 					inst = insts[1];
@@ -165,8 +168,8 @@ if (1)
 				else if (pgroups[1] == 0xF2)
 					inst = insts[3];
 				if (inst == undefined)
-					throw Error('Missing mandatory prefix for: '+b);
-				return decodeFields(inst);
+					throw Error('Missing mandatory prefix for: '+opstr);
+				return decodeFields(inst,opcode);
 			}
 		}
 		throw Error('EOF while decoding instruction');
