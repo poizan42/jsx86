@@ -33,5 +33,13 @@ StringStream = extend(Stream, function (/*string*/ str, /*int*/ position)
 	eof: function ()
 	{
 		return this._position >= this._storage.length; 
+	},
+	getSize: function ()
+	{
+		return this._storage.length;
+	},
+	getPosition: function ()
+	{
+		return this._position;
 	}
 }
