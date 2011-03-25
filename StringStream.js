@@ -26,7 +26,7 @@ StringStream = extend(Stream, function (/*string*/ str, /*int*/ position)
 	{
 		if (this.eof())
 			return -1;
-		var b = this._storage.charCodeAt(position);
+		var b = this._storage.charCodeAt(this._position);
 		this._position++;
 		return b;
 	},
@@ -41,5 +41,11 @@ StringStream = extend(Stream, function (/*string*/ str, /*int*/ position)
 	getPosition: function ()
 	{
 		return this._position;
+	},
+	_p_setPosition: function (newPos)
+	{
+		if (newPos < 0 || newPos > getSize()-1)
+			throw Error("Position out of range "+newPos);
+		this._position = newPos;
 	}
-}
+});

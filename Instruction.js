@@ -82,7 +82,7 @@ if (1)
 	{
 		var prefixes = [];
 		var pgroups = [];
-		var checkGetByte()
+		var checkGetByte = function()
 		{
 			var b;
 			if ((b = code.getByte()) == -1)
@@ -129,7 +129,7 @@ if (1)
 		
 		while ((b = code.getByte()) != -1)
 		{
-			prefix = jsx86.instructions.prefixes[b];
+			prefix = jsx86.instruction.prefixes[b];
 			if (prefix != undefined)
 			{
 				if (pgroups[prefix[0]])
@@ -140,7 +140,7 @@ if (1)
 			{
 				//2 byte instructions starts with 0F.
 				//3 byte instructions starts with either 0F 38 or 0F 3A
-				if (b != 0F)
+				if (b != 0x0F)
 				{
 					var inst = jsx86.instruction.B1Instructions[b];
 					if (inst === undefined)
@@ -170,4 +170,16 @@ if (1)
 			}
 		}
 		throw Error('EOF while decoding instruction');
+	}
+	
+	jsx86.instruction.registerB1Instruction = function (opcode, iInfo)
+	{
+		jsx86.instruction.B1Instructions[opcode] = iInfo;
+	}
+	
+	jsx86.instruction.registerB23Instruction = function (opcode, prefix, iInfo)
+	{
+		if (jsx86.instruction.B23Instructions[opcode] == undefined)
+			jsx86.instruction.B23Instructions[opcode] = [];
+		jsx86.instruction.B23Instructions[opcode][prefix] = iInfo;
 	}

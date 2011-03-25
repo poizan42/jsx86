@@ -37,6 +37,22 @@ Stream = extend(Object, function ()
 	{
 		throw new Error("Not implemented!");
 	},
+	_p_setPosition: function (position)
+	{
+		throw new Error("Not implemented!");
+	},
+	//origin: -1 for beginning, 0 for current, 1 for end
+	seek: function (offset, origin)
+	{
+		var newPos = this.getPosition();
+		if (origin == -1) //beginning
+			newPos = offset;
+		else if (origin == 0) //current
+			newPos += offset;
+		else if (origin == 1) //end
+			newPos = getSize() - offset - 1;
+		this._p_setPosition(newPos);
+	},
 	eof: function ()
 	{
 		return this.getPosition() >= this.getSize();
@@ -50,4 +66,4 @@ Stream = extend(Object, function ()
 			c++;
 		}
 		return c;
-	});
+	}});
