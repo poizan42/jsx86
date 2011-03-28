@@ -35,6 +35,28 @@ function extend(superc, ctor, overrides) {
 	return subc;
 };
 
+function shallowCopy(obj)
+{
+	if(obj == null || typeof(obj) != 'object')
+		return obj;
+	if(obj.constructor == Array)
+		return [].concat(obj);
+	var temp = {};
+	for(var key in obj)
+		temp[key] = obj[key];
+	return temp;
+}
+
+function unionMaps(obj1,obj2)
+{
+	var temp = {};
+	for(var key in obj1)
+		temp[key] = obj1[key];
+	for(var key in obj2)
+		temp[key] = obj2[key];
+	return temp;
+}
+
 var jsx86 = {};
 
 jsx86.cpu = {
