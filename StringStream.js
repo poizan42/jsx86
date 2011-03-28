@@ -44,7 +44,7 @@ StringStream = extend(Stream, function (/*string*/ str, /*int*/ position)
 	},
 	_p_setPosition: function (newPos)
 	{
-		if (newPos < 0 || newPos > getSize()-1)
+		if (newPos < 0 || newPos > this.getSize()-1)
 			throw Error("Position out of range "+newPos);
 		this._position = newPos;
 	}

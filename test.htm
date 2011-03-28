@@ -7,13 +7,31 @@
 <script type="text/javascript" src="StringStream.js"></script>
 <script type="text/javascript" src="Instruction.js"></script>
 <script type="text/javascript">
-	var data = window.atob('ZonY'); //mov eax,ebx
-	var code = new StringStream(data);
+	var data1 = window.atob('ZonY'); //mov eax,ebx
+	var data2 = window.atob('Z4sD'); //mov ax,[ebx]
+	var data3 = window.atob('Z2aLAw=='); //mov eax,[ebx]
+	var data4 = window.atob('Z2aLBJM='); //mov eax,[edx*4+ebx]
+	var data5 = window.atob('Z2aJBJM='); //mov [edx*4+ebx],eax
 	
+	//(prefixes, opcode, modRM, SIB, disp, imm, op1, op2)
 	//MOV Ev,Gv 0x89
 	jsx86.instruction.registerB1Instruction(0x89,
-		{hasModRM: true, hasSIB: false, dispSize: 0, immSize: 0,
-		 translator: null});
+		{hasModRM: true,
+		 SIBMode: jsx86.instruction.SIBMode.byModRM,
+		 op1Mode: jsx86.instruction.OpMode.rOperandSize,
+		 op2Mode: jsx86.instruction.OpMode.rOperandSize,
+		 dispSize: jsx86.instruction.FieldLength.byModRM,
+		 immSize: jsx86.instruction.FieldLength.none,
+		 translator: function (i) {return i.op2[1](i.op1[0])}});
+	//MOV Gv,Ev 0x8B
+	jsx86.instruction.registerB1Instruction(0x8B,
+		{hasModRM: true,
+		 SIBMode: jsx86.instruction.SIBMode.byModRM,
+		 op1Mode: jsx86.instruction.OpMode.rOperandSize,
+		 op2Mode: jsx86.instruction.OpMode.rOperandSize,
+		 dispSize: jsx86.instruction.FieldLength.byModRM,
+		 immSize: jsx86.instruction.FieldLength.none,
+		 translator: function (i) {return i.op1[1](i.op2[0])}});
 </script>
 </head>
 <body>

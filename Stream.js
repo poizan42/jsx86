@@ -50,7 +50,7 @@ Stream = extend(Object, function ()
 		else if (origin == 0) //current
 			newPos += offset;
 		else if (origin == 1) //end
-			newPos = getSize() - offset - 1;
+			newPos = this.getSize() - offset - 1;
 		this._p_setPosition(newPos);
 	},
 	eof: function ()
