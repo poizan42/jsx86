@@ -6,30 +6,27 @@
 <script type="text/javascript" src="Stream.js"></script>
 <script type="text/javascript" src="StringStream.js"></script>
 <script type="text/javascript" src="Instruction.js"></script>
+<script type="text/javascript" src="instructions/base.js"></script>
 <script type="text/javascript">
-	var data1 = window.atob('ZonY'); //mov eax,ebx
-	var data2 = window.atob('Z4sD'); //mov ax,[ebx]
-	var data3 = window.atob('Z2aLAw=='); //mov eax,[ebx]
-	var data4 = window.atob('Z2aLBJM='); //mov eax,[edx*4+ebx]
-	var data5 = window.atob('Z2aJBJM='); //mov [edx*4+ebx],eax
-	var data6 = window.atob('iOA='); //mov	AL,AH
-	
-	//(prefixes, opcode, modRM, SIB, disp, imm, op1, op2)
-	var iEvGv = {hasModRM: true,
-		 SIBMode: jsx86.instruction.SIBMode.byModRM,
-		 op1Mode: jsx86.instruction.OpMode.rOperandSize,
-		 op2Mode: jsx86.instruction.OpMode.rOperandSize,
-		 dispSize: jsx86.instruction.FieldLength.byModRM,
-		 immSize: jsx86.instruction.FieldLength.none};
-	//MOV Ev,Gv 0x89
-	jsx86.instruction.registerB1Instruction(0x89,
-		unionMaps(iEvGv, 
-		{translator: function (i) {return i.op2[1](i.op1[0])}}));
-	//MOV Gv,Ev 0x8B
-	jsx86.instruction.registerB1Instruction(0x8B,
-		unionMaps(iEvGv, 
-		{translator: function (i) {return i.op1[1](i.op2[0])}}));
+	var data = [];
+	data[1] = window.atob('ZonY'); //mov eax,ebx
+	data[2] = window.atob('Z4sD'); //mov ax,[ebx]
+	data[3] = window.atob('Z2aLAw=='); //mov eax,[ebx]
+	data[4] = window.atob('Z2aLBJM='); //mov eax,[edx*4+ebx]
+	data[5] = window.atob('Z2aJBJM='); //mov [edx*4+ebx],eax
+	data[6] = window.atob('iOA='); //mov	al,ah
+	data[7] = window.atob('jMg='); //mov	ax,cs
+	data[8] = window.atob('Z2aNBJM='); //lea	eax,[edx*4+ebx]
 </script>
 </head>
 <body>
+<script type="text/javascript">
+	document.write('<pre>');
+	for (i in data)
+	{
+		var ins = jsx86.instruction.decodeInstruction(new StringStream(data[i]),false);
+		document.write(ins.info.translator(ins)+'\n');
+	}
+	document.write('</pre>');
+</script>
 </body>

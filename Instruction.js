@@ -86,8 +86,9 @@ if (1)
 		none: 0,
 		r8: 1,
 		rOperandSize: 2,
-		mm: 3,
-		xmm: 4
+		segment: 3,
+		mm: 4,
+		xmm: 5
 	}
 	
 	//AL,CL,DL,BL,AH,CH,DH,BH
@@ -168,9 +169,33 @@ if (1)
 		'c.edi'
 	];
 
+	/*Segment register map. Where is this documented??
+	  es: c0 11 000 000
+	  cs: c8 11 001 000
+	  ss: d0 11 010 000
+	  ds: d8 11 011 000
+	  fs: e0 11 100 000
+	  gs: e8 11 101 000
+	  ??: f0 11 110 000
+	  ??: f8 11 111 000*/
+	jsx86.instruction.segMap = [
+		['c.es', function (v){return 'c.es = '+v+';'}],
+		['c.cs', function (v){return 'c.es = '+v+';'}],
+		['c.ss', function (v){return 'c.es = '+v+';'}],
+		['c.ds', function (v){return 'c.es = '+v+';'}],
+		['c.fs', function (v){return 'c.es = '+v+';'}],
+		['c.gs', function (v){return 'c.es = '+v+';'}]
+	];
+
+	/*
+		Op2Flags: EffectiveAddress
+	*/
+
 	//instruction maps
 	/*instruction info format:
-		{hasModRM: boolean, SIBMode: SIBMode, op1Mode: Op1Mode, op2Mode: Op2Mode, dispSize: FieldLength, immSize: FieldLength,
+		{hasModRM: boolean, SIBMode: SIBMode, op1Mode: Op1Mode,
+		 op2Mode: Op2Mode, op2Flags: Op2Flags, dispSize: FieldLength,
+		 immSize: FieldLength,
 		 translator: function (prefixes, opcode, modRM, SIB, disp, imm, op1, op2)}
 	  B1 instructions are indexed by their opcode
 	  B2 instructions are indexed by their second opcode
@@ -206,6 +231,8 @@ if (1)
 						return jsx86.instruction.r16Map;
 					else
 						return jsx86.instruction.r32Map;
+				case jsx86.instruction.OpMode.segment:
+					return jsx86.instruction.segMap;
 				case jsx86.instruction.OpMode.mm:
 					return jsx86.instruction.mmMap;
 				case jsx86.instruction.OpMode.xmm:
@@ -245,6 +272,8 @@ if (1)
 			{
 				var map = getMap(i.op1Mode,longOp);
 				op1 = map[modRM.regOp];
+				if (op1 == undefined)
+					throw new Error('Invalid reg value');
 			}
 			var dispSize = 0;
 			if (modRM != null && i.op2Mode != jsx86.instruction.OpMode.none)
@@ -322,10 +351,13 @@ if (1)
 			}
 			if (memOp2)
 			{
-				op2 = [
-					'm.get('+op2s+')',
-					function (v) { return 'm.set('+op2s+','+v+');' }
-				];
+				if (i.op2Flags.EffectiveAddress)
+					op2 = [op2s, null];
+				else
+					op2 = [
+						'm.get('+op2s+')',
+						function (v) { return 'm.set('+op2s+','+v+');' }
+					];
 			}
 			var immSize = 0;
 			switch (i.immSize)
