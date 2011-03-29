@@ -93,25 +93,25 @@ jsx86.instruction = {};
 	
 	//AL,CL,DL,BL,AH,CH,DH,BH
 	jsx86.instruction.r8Map = [
-		['(c.eax & 0xFF)', function (v){return 'c.eax = (('+v+') & 0xFF) | (c.eax & 0xFFFFFF00);'}],
-		['(c.ecx & 0xFF)', function (v){return 'c.ecx = (('+v+') & 0xFF) | (c.ecx & 0xFFFFFF00);'}],
-		['(c.edx & 0xFF)', function (v){return 'c.edx = (('+v+') & 0xFF) | (c.edx & 0xFFFFFF00);'}],
-		['(c.ebx & 0xFF)', function (v){return 'c.ebx = (('+v+') & 0xFF) | (c.ebx & 0xFFFFFF00);'}],
-		['((c.eax & 0xFF00) >> 8)', function (v){return 'c.eax = ((('+v+') & 0xFF) << 8) | (c.eax & 0xFFFF00FF);'}],
-		['((c.ecx & 0xFF00) >> 8)', function (v){return 'c.ecx = ((('+v+') & 0xFF) << 8) | (c.ecx & 0xFFFF00FF);'}],
-		['((c.edx & 0xFF00) >> 8)', function (v){return 'c.edx = ((('+v+') & 0xFF) << 8) | (c.edx & 0xFFFF00FF);'}],
-		['((c.ebx & 0xFF00) >> 8)', function (v){return 'c.ebx = ((('+v+') & 0xFF) << 8) | (c.ebx & 0xFFFF00FF);'}]
+		['(c.eax & 0xFF)', function (v){return 'c.eax = '+v+' | (c.eax & 0xFFFFFF00);'}],
+		['(c.ecx & 0xFF)', function (v){return 'c.ecx = '+v+' | (c.ecx & 0xFFFFFF00);'}],
+		['(c.edx & 0xFF)', function (v){return 'c.edx = '+v+' | (c.edx & 0xFFFFFF00);'}],
+		['(c.ebx & 0xFF)', function (v){return 'c.ebx = '+v+' | (c.ebx & 0xFFFFFF00);'}],
+		['((c.eax & 0xFF00) >> 8)', function (v){return 'c.eax = ('+v+' << 8) | (c.eax & 0xFFFF00FF);'}],
+		['((c.ecx & 0xFF00) >> 8)', function (v){return 'c.ecx = ('+v+' << 8) | (c.ecx & 0xFFFF00FF);'}],
+		['((c.edx & 0xFF00) >> 8)', function (v){return 'c.edx = ('+v+' << 8) | (c.edx & 0xFFFF00FF);'}],
+		['((c.ebx & 0xFF00) >> 8)', function (v){return 'c.ebx = ('+v+' << 8) | (c.ebx & 0xFFFF00FF);'}]
 	];
 	//AX,CX,DX,BX,SP,BP,SI,DI
 	jsx86.instruction.r16Map = [
-		['(c.eax & 0xFFFF)', function (v){return 'c.eax = (('+v+') & 0xFFFF) | (c.eax & 0xFFFF0000);'}],
-		['(c.ecx & 0xFFFF)', function (v){return 'c.ecx = (('+v+') & 0xFFFF) | (c.ecx & 0xFFFF0000);'}],
-		['(c.edx & 0xFFFF)', function (v){return 'c.edx = (('+v+') & 0xFFFF) | (c.edx & 0xFFFF0000);'}],
-		['(c.ebx & 0xFFFF)', function (v){return 'c.ebx = (('+v+') & 0xFFFF) | (c.ebx & 0xFFFF0000);'}],
-		['(c.esp & 0xFFFF)', function (v){return 'c.esp = (('+v+') & 0xFFFF) | (c.esp & 0xFFFF0000);'}],
-		['(c.ebp & 0xFFFF)', function (v){return 'c.ebp = (('+v+') & 0xFFFF) | (c.ebp & 0xFFFF0000);'}],
-		['(c.esi & 0xFFFF)', function (v){return 'c.esi = (('+v+') & 0xFFFF) | (c.esi & 0xFFFF0000);'}],
-		['(c.edi & 0xFFFF)', function (v){return 'c.edi = (('+v+') & 0xFFFF) | (c.edi & 0xFFFF0000);'}]
+		['(c.eax & 0xFFFF)', function (v){return 'c.eax = ('+v+' | (c.eax & 0xFFFF0000);'}],
+		['(c.ecx & 0xFFFF)', function (v){return 'c.ecx = ('+v+' | (c.ecx & 0xFFFF0000);'}],
+		['(c.edx & 0xFFFF)', function (v){return 'c.edx = ('+v+' | (c.edx & 0xFFFF0000);'}],
+		['(c.ebx & 0xFFFF)', function (v){return 'c.ebx = ('+v+' | (c.ebx & 0xFFFF0000);'}],
+		['(c.esp & 0xFFFF)', function (v){return 'c.esp = ('+v+' | (c.esp & 0xFFFF0000);'}],
+		['(c.ebp & 0xFFFF)', function (v){return 'c.ebp = ('+v+' | (c.ebp & 0xFFFF0000);'}],
+		['(c.esi & 0xFFFF)', function (v){return 'c.esi = ('+v+' | (c.esi & 0xFFFF0000);'}],
+		['(c.edi & 0xFFFF)', function (v){return 'c.edi = ('+v+' | (c.edi & 0xFFFF0000);'}]
 	];
 	//EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI
 	jsx86.instruction.r32Map = [
@@ -259,19 +259,21 @@ jsx86.instruction = {};
 			}
 			return def;
 		}
-		var decodeFields = function(i,op)
+		var decodeModRM = function()
+		{
+			var b = checkGetByte();
+			var modRM = {};
+			modRM.val = b;
+			modRM.mod = b >> 6;
+			modRM.regOp = (b >> 3) & 0x7;
+			modRM.RM = b & 0x7;
+			return modRM;
+		}
+		var decodeFields = function(i,op,modRM)
 		{
 			var b;
-			var modRM = null;
-			if (i.hasModRM)
-			{
-				b = checkGetByte();
-				modRM = {};
-				modRM.val = b;
-				modRM.mod = b >> 6;
-				modRM.regOp = (b >> 3) & 0x7;
-				modRM.RM = b & 0x7;
-			}
+			if (modRM == undefined)
+				var modRM = i.hasModRM ? decodeModRM() : null;
 			var SIB = null;
 			if (longAddr && modRM != null &&
 			    i.SIBMode == jsx86.instruction.SIBMode.byModRM &&
@@ -406,6 +408,11 @@ jsx86.instruction = {};
 					if (inst === undefined)
 						throw Error('Unknown instruction: 0x'+
 						            b.toString(16));
+					if (inst.constructor == Array)
+					{
+						var modRM = decodeModRM();
+						return decodeFields(inst[modRM.regOp],b,modRM);
+					}
 					return decodeFields(inst,b);
 				}
 				b = checkGetByte();
@@ -428,6 +435,11 @@ jsx86.instruction = {};
 					inst = insts[3];
 				if (inst == undefined)
 					throw Error('Missing mandatory prefix for: '+opstr);
+				if (inst.constructor == Array)
+				{
+					var modRM = decodeModRM();
+					return decodeFields(inst[modRM.regOp],opcode,modRM);
+				}
 				return decodeFields(inst,opcode);
 			}
 		}
@@ -439,9 +451,26 @@ jsx86.instruction = {};
 		jsx86.instruction.B1Instructions[opcode] = iInfo;
 	}
 	
+	jsx86.instruction.registerB1InstructionEx = function (opcode, extOp, iInfo)
+	{
+		if (jsx86.instruction.B1Instructions[opcode] == undefined)
+			jsx86.instruction.B1Instructions[opcode] = [];
+		jsx86.instruction.B1Instructions[opcode][extOp] = iInfo;
+	}
+	
 	jsx86.instruction.registerB23Instruction = function (opcode, prefix, iInfo)
 	{
 		if (jsx86.instruction.B23Instructions[opcode] == undefined)
 			jsx86.instruction.B23Instructions[opcode] = [];
 		jsx86.instruction.B23Instructions[opcode][prefix] = iInfo;
+	}
+	
+	jsx86.instruction.registerB23InstructionEx = function (opcode, prefix, extOp, iInfo)
+	{
+		var table = jsx86.instruction.B23Instructions;
+		if (table[opcode] == undefined)
+			table[opcode] = [];
+		if (table[opcode][prefix] == undefined)
+			table[opcode][prefix] = [];
+		table[opcode][prefix][extOp] = iInfo;
 	}

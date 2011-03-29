@@ -53,7 +53,17 @@
 	var iIb = unionMaps(iNone,{
 		immSize: jsx86.instruction.FieldLength.one});
 	var iIv = unionMaps(iNone,{
-		immSize: jsx86.instruction.FieldLength.byMode});		
+		immSize: jsx86.instruction.FieldLength.byMode});
+	var iEvIv = unionMaps(iEvGv, {
+		 op1Mode: jsx86.instruction.OpMode.none,
+		 op2Mode: jsx86.instruction.OpMode.rOperandSize,
+		 immSize: jsx86.instruction.FieldLength.byMode,
+		 memSize: jsx86.instruction.FieldLength.byMode});	
+	var iEbIb = unionMaps(iEvGv, {
+		 op1Mode: jsx86.instruction.OpMode.none,
+		 op2Mode: jsx86.instruction.OpMode.r8,
+		 immSize: jsx86.instruction.FieldLength.one,
+		 memSize: jsx86.instruction.FieldLength.one});
 	//MOV Eb,Gb 0x88
 	jsx86.instruction.registerB1Instruction(0x88,
 		unionMaps(iEbGb,
@@ -134,4 +144,13 @@
 	//MOV (rv),Iv 0xB8 - 0xBF
 	for (var i=0; i <= 7; i++)
 		jsx86.instruction.registerB1Instruction(0xB8|i,movivInf);
+		
+	//MOV Eb,Ib 0xC6 (ext 0)
+	jsx86.instruction.registerB1InstructionEx(0xC6, 0,
+		unionMaps(iEbIb,{
+			translator: function (i) {return i.op2[1](i.imm)}}));
+	//MOV Ev,Iz 0xC7 (ext 0)
+	jsx86.instruction.registerB1InstructionEx(0xC7, 0,
+		unionMaps(iEvIv,{
+			translator: function (i) {return i.op2[1](i.imm)}}));
 })();

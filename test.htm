@@ -23,6 +23,8 @@
 	data[12] = window.atob('ZqEqAA==');	//mov	eax,[2Ah]
 	data[13] = window.atob('ZrhyebdP');	//mov	eax,1337424242
 	data[14] = window.atob('Z2ahcnm3Tw==');	//mov	eax,[1337424242]
+	data[15] = window.atob('Z2bHACoAAAA=');	//mov	DWORD [eax],42
+	data[16] = window.atob('Z8YAKg==');	//mov	BYTE [eax],42
 </script>
 </head>
 <body>
@@ -31,7 +33,7 @@
 	for (i in data)
 	{
 		var ins = jsx86.instruction.decodeInstruction(new StringStream(data[i]),false);
-		document.write(ins.info.translator(ins)+'\n');
+		document.write(i+': '+ins.info.translator(ins)+'\n');
 	}
 	document.write('</pre>');
 </script>
