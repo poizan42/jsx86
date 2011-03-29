@@ -57,13 +57,14 @@
 	var iEvIv = unionMaps(iEvGv, {
 		 op1Mode: jsx86.instruction.OpMode.none,
 		 op2Mode: jsx86.instruction.OpMode.rOperandSize,
-		 immSize: jsx86.instruction.FieldLength.byMode,
-		 memSize: jsx86.instruction.FieldLength.byMode});	
+		 immSize: jsx86.instruction.FieldLength.byMode});	
 	var iEbIb = unionMaps(iEvGv, {
 		 op1Mode: jsx86.instruction.OpMode.none,
 		 op2Mode: jsx86.instruction.OpMode.r8,
 		 immSize: jsx86.instruction.FieldLength.one,
 		 memSize: jsx86.instruction.FieldLength.one});
+	var iEv = unionMaps(iEvGv, {
+		 op1Mode: jsx86.instruction.OpMode.none});
 	//MOV Eb,Gb 0x88
 	jsx86.instruction.registerB1Instruction(0x88,
 		unionMaps(iEbGb,
@@ -153,4 +154,19 @@
 	jsx86.instruction.registerB1InstructionEx(0xC7, 0,
 		unionMaps(iEvIv,{
 			translator: function (i) {return i.op2[1](i.imm)}}));
+	
+	//NOP Ev 0x0F 0D
+	/*This encoding isn't listed under the description of NOP,
+	  but it is in Volume 2B, Table A-3.
+	  Note that both ndisasm and objdump errornously claims this to be an
+	  encoding of prefetch.
+	*/
+	jsx86.instruction.registerB23Instruction(0x0D,0,
+		unionMaps(iEv,{
+			translator: function (i) {return ';'}}));
+	//NOP Ev 0x0F 1F
+	//This is the standard encoding of this strange instruction...
+	jsx86.instruction.registerB23Instruction(0x1F,0,
+		unionMaps(iEv,{
+			translator: function (i) {return ';'}}));
 })();

@@ -9,22 +9,25 @@
 <script type="text/javascript" src="instructions/base.js"></script>
 <script type="text/javascript">
 	var data = [];
-	data[1] = window.atob('ZonY');		//mov eax,ebx
-	data[2] = window.atob('Z4sD');		//mov ax,[ebx]
-	data[3] = window.atob('Z2aLAw==');	//mov eax,[ebx]
-	data[4] = window.atob('Z2aLBJM=');	//mov eax,[edx*4+ebx]
-	data[5] = window.atob('Z2aJBJM=');	//mov [edx*4+ebx],eax
-	data[6] = window.atob('iOA=');		//mov	al,ah
-	data[7] = window.atob('jMg=');		//mov	ax,cs
-	data[8] = window.atob('Z2aNBJM=');	//lea	eax,[edx*4+ebx]
-	data[9] = window.atob('sCo=');		//mov	al,2Ah
-	data[10] = window.atob('oCoA');		//mov	al,[2Ah]
-	data[11] = window.atob('oSoA');		//mov	ax,[2Ah]
-	data[12] = window.atob('ZqEqAA==');	//mov	eax,[2Ah]
-	data[13] = window.atob('ZrhyebdP');	//mov	eax,1337424242
-	data[14] = window.atob('Z2ahcnm3Tw==');	//mov	eax,[1337424242]
-	data[15] = window.atob('Z2bHACoAAAA=');	//mov	DWORD [eax],42
-	data[16] = window.atob('Z8YAKg==');	//mov	BYTE [eax],42
+	data[1] = [window.atob('ZonY'),0];		//mov eax,ebx
+	data[2] = [window.atob('Z4sD'),0];		//mov ax,[ebx]
+	data[3] = [window.atob('Z2aLAw=='),0];	//mov eax,[ebx]
+	data[4] = [window.atob('Z2aLBJM='),0];	//mov eax,[edx*4+ebx]
+	data[5] = [window.atob('Z2aJBJM='),0];	//mov [edx*4+ebx],eax
+	data[6] = [window.atob('iOA='),0];		//mov	al,ah
+	data[7] = [window.atob('jMg='),0];		//mov	ax,cs
+	data[8] = [window.atob('Z2aNBJM='),0];	//lea	eax,[edx*4+ebx]
+	data[9] = [window.atob('sCo='),0];		//mov	al,2Ah
+	data[10] = [window.atob('oCoA'),0];		//mov	al,[2Ah]
+	data[11] = [window.atob('oSoA'),0];		//mov	ax,[2Ah]
+	data[12] = [window.atob('ZqEqAA=='),0];	//mov	eax,[2Ah]
+	data[13] = [window.atob('ZrhyebdP'),0];	//mov	eax,1337424242
+	data[14] = [window.atob('Z2ahcnm3Tw=='),0];	//mov	eax,[1337424242]
+	data[15] = [window.atob('Z2bHACoAAAA='),0];	//mov	DWORD [eax],42
+	data[16] = [window.atob('Z8YAKg=='),0];	//mov	BYTE [eax],42
+	data[17] = [window.atob('kA=='),0];		//nop
+	data[18] = [window.atob('Dx8FAAAAAA=='),1];	//nop DWORD [0]
+	data[19] = [window.atob('Dw0FAAAAAA=='),1];	//nop DWORD [0] (alternative encoding)
 </script>
 </head>
 <body>
@@ -32,7 +35,7 @@
 	document.write('<pre>');
 	for (i in data)
 	{
-		var ins = jsx86.instruction.decodeInstruction(new StringStream(data[i]),false);
+		var ins = jsx86.instruction.decodeInstruction(new StringStream(data[i][0]),!!data[i][1]);
 		document.write(i+': '+ins.info.translator(ins)+'\n');
 	}
 	document.write('</pre>');

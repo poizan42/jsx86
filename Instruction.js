@@ -422,7 +422,7 @@ jsx86.instruction = {};
 					b = checkGetByte();
 					opcode = (opcode << 8) | b;
 				}
-				var opstr = '0x0F'+opcode.toString(16);
+				var opstr = '0x0f'+opcode.toString(16);
 				var insts = jsx86.instruction.B23Instructions[opcode];
 				if (insts == undefined)
 					throw Error('Unknown instruction: '+opstr);
