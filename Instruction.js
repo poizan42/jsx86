@@ -326,22 +326,22 @@ if (1)
 			}
 			switch (i.dispSize)
 			{
-				case jsx86.instruction.OpMode.none:
+				case jsx86.instruction.FieldLength.none:
 					dispSize = 0;
 					break;
-				case jsx86.instruction.OpMode.one:
+				case jsx86.instruction.FieldLength.one:
 					dispSize = 1;
 					break;
-				case jsx86.instruction.OpMode.two:
+				case jsx86.instruction.FieldLength.two:
 					dispSize = 2;
 					break;
-				case jsx86.instruction.OpMode.four:
+				case jsx86.instruction.FieldLength.four:
 					dispSize = 4;
 					break;
-				case jsx86.instruction.OpMode.byMode:
+				case jsx86.instruction.FieldLength.byMode:
 					dispSize = longAddr ? 4 : 2;
 					break;
-				//case jsx86.instruction.OpMode.byModRM: (no change)
+				//case jsx86.instruction.FieldLength.byModRM: (no change)
 			}
 			var disp = 0;
 			for (var n = 0; n < dispSize; n++)
@@ -362,23 +362,24 @@ if (1)
 			var immSize = 0;
 			switch (i.immSize)
 			{
-				case jsx86.instruction.OpMode.none:
+				case jsx86.instruction.FieldLength.none:
 					immSize = 0;
 					break;
-				case jsx86.instruction.OpMode.one:
+				case jsx86.instruction.FieldLength.one:
 					immSize = 1;
 					break;
-				case jsx86.instruction.OpMode.two:
+				case jsx86.instruction.FieldLength.two:
 					immSize = 2;
 					break;
-				case jsx86.instruction.OpMode.four:
+				case jsx86.instruction.FieldLength.four:
 					immSize = 4;
 					break;
-				case jsx86.instruction.OpMode.byMode:
+				case jsx86.instruction.FieldLength.byMode:
 					immSize = longOp ? 4 : 2;
 					break;
 			}
 			var imm = 0;
+			console.log('immSize='+immSize);
 			for (var n = 0; n < immSize; n++)
 			{
 				b = checkGetByte();
