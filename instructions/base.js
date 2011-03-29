@@ -1,4 +1,4 @@
-if (1) //non-global scope
+(function () //non-global scope
 {
 	var getValByMode = function(src,mode)
 	{
@@ -134,4 +134,4 @@ if (1) //non-global scope
 	//MOV (rv),Iv 0xB8 - 0xBF
 	for (var i=0; i <= 7; i++)
 		jsx86.instruction.registerB1Instruction(0xB8|i,movivInf);
-}
+})();

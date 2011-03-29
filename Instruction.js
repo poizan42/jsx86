@@ -18,7 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 jsx86.instruction = {};
-if (1)
+(function () //non-global scope
 {
 	var p = {};
 	//Group 1 — Lock and repeat prefixes:
@@ -63,7 +63,7 @@ if (1)
 	{
 		jsx86.instruction.prefixvals[p[i][1]] = i;
 	}
-}
+})();
 	jsx86.instruction.FieldLength = {
 		none: 0,
 		one: 1,
