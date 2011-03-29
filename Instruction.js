@@ -195,7 +195,7 @@ if (1)
 	/*instruction info format:
 		{hasModRM: boolean, SIBMode: SIBMode, op1Mode: Op1Mode,
 		 op2Mode: Op2Mode, op2Flags: Op2Flags, dispSize: FieldLength,
-		 immSize: FieldLength,
+		 immSize: FieldLength, memSize: FieldLength,
 		 translator: function (prefixes, opcode, modRM, SIB, disp, imm, op1, op2)}
 	  B1 instructions are indexed by their opcode
 	  B2 instructions are indexed by their second opcode
@@ -241,6 +241,24 @@ if (1)
 					return null;
 			}
 		}
+		var getFieldSize = function (size,mode,def)
+		{
+			switch (size)
+			{
+				case jsx86.instruction.FieldLength.none:
+					return 0;
+				case jsx86.instruction.FieldLength.one:
+					return 1;
+				case jsx86.instruction.FieldLength.two:
+					return 2;
+				case jsx86.instruction.FieldLength.four:
+					return 4;
+				case jsx86.instruction.FieldLength.byMode:
+					return mode ? 4 : 2;
+				//case jsx86.instruction.FieldLength.byModRM: (no change)
+			}
+			return def;
+		}
 		var decodeFields = function(i,op)
 		{
 			var b;
@@ -267,6 +285,7 @@ if (1)
 			}
 			var op1 = null; //the register in reg/op
 			var op2 = null; //the operand in RM
+			var op2s = '0';
 			var memOp2 = false; //is op2 a pointer
 			if (modRM != null && i.op1Mode != jsx86.instruction.OpMode.none)
 			{
@@ -324,25 +343,9 @@ if (1)
 						op2s = jsx86.instruction.ea32Map[modRM.RM];
 				}
 			}
-			switch (i.dispSize)
-			{
-				case jsx86.instruction.FieldLength.none:
-					dispSize = 0;
-					break;
-				case jsx86.instruction.FieldLength.one:
-					dispSize = 1;
-					break;
-				case jsx86.instruction.FieldLength.two:
-					dispSize = 2;
-					break;
-				case jsx86.instruction.FieldLength.four:
-					dispSize = 4;
-					break;
-				case jsx86.instruction.FieldLength.byMode:
-					dispSize = longAddr ? 4 : 2;
-					break;
-				//case jsx86.instruction.FieldLength.byModRM: (no change)
-			}
+			dispSize = getFieldSize(i.dispSize,longAddr,dispSize);
+			if (dispSize > 0)
+				memOp2 = true;
 			var disp = 0;
 			for (var n = 0; n < dispSize; n++)
 			{
@@ -351,42 +354,31 @@ if (1)
 			}
 			if (memOp2)
 			{
+				if (disp > 0)
+					op2s += '+' + disp;
 				if (i.op2Flags.EffectiveAddress)
 					op2 = [op2s, null];
 				else
+				{
+					var memSize = getFieldSize(i.memSize,longOp,0);
+					if (!memSize)
+						throw Error('Memory operand, but memSize is 0');
 					op2 = [
-						'm.get('+op2s+')',
-						function (v) { return 'm.set('+op2s+','+v+');' }
+						'm.get'+memSize+'('+op2s+')',
+						function (v) { return 'm.set'+memSize+'('+op2s+','+v+');' }
 					];
+				}
 			}
-			var immSize = 0;
-			switch (i.immSize)
-			{
-				case jsx86.instruction.FieldLength.none:
-					immSize = 0;
-					break;
-				case jsx86.instruction.FieldLength.one:
-					immSize = 1;
-					break;
-				case jsx86.instruction.FieldLength.two:
-					immSize = 2;
-					break;
-				case jsx86.instruction.FieldLength.four:
-					immSize = 4;
-					break;
-				case jsx86.instruction.FieldLength.byMode:
-					immSize = longOp ? 4 : 2;
-					break;
-			}
+			var immSize = getFieldSize(i.immSize, longOp, 0);
 			var imm = 0;
-			console.log('immSize='+immSize);
 			for (var n = 0; n < immSize; n++)
 			{
 				b = checkGetByte();
 				imm |= b << (n*8);
 			}
 			return {opcode:op, prefixes: prefixes, modRM: modRM, SIB: SIB,
-			        disp: disp, imm: imm, op1: op1, op2: op2, info:i};
+			        disp: disp, imm: imm, op1: op1, op2: op2, longOp: longOp,
+			        longAddr: longAddr, info: i};
 		}
 		var b;
 		
