@@ -4,7 +4,9 @@
 <title>jsx86 test</title>
 <script type="text/javascript" src="core.js"></script>
 <script type="text/javascript" src="Stream.js"></script>
-<script type="text/javascript" src="StringStream.js"></script>
+<script type="text/javascript" src="Memory.js"></script>
+<script type="text/javascript" src="StringMemory.js"></script>
+<script type="text/javascript" src="MemoryStream.js"></script>
 <script type="text/javascript" src="Instruction.js"></script>
 <script type="text/javascript" src="instructions/base.js"></script>
 <script type="text/javascript">
@@ -35,7 +37,7 @@
 	document.write('<pre>');
 	for (i in data)
 	{
-		var ins = jsx86.instruction.decodeInstruction(new StringStream(data[i][0]),!!data[i][1]);
+		var ins = jsx86.instruction.decodeInstruction(new MemoryStream(new StringMemory(data[i][0])),!!data[i][1]);
 		document.write(i+': '+ins.info.translator(ins)+'\n');
 	}
 	document.write('</pre>');

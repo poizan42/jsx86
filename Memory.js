@@ -1,5 +1,5 @@
 /*
-A (readonly) Stream wrapping a string
+Abstract Random Access Memory class
 Copyright (C) 2011 Kasper Fabæch Brandt
 
 This program is free software; you can redistribute it and/or
@@ -17,35 +17,42 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-StringStream = extend(Stream, function (/*string*/ str, /*int*/ position)
+OutOfRangeException = extend(Error, function (msg){
+	this.superclass(msg);
+});
+
+Memory = extend(Object, function ()
 {
-	this._storage = str;
-	this._position = (position == undefined) ? 0 : position;
+	throw new Error("Pure virtual!");
 },{
-	getByte: function ()
+	get1: function (address)
 	{
-		if (this.eof())
-			return -1;
-		var b = this._storage.charCodeAt(this._position);
-		this._position++;
-		return b;
+		throw new Error("Not implemented!");
 	},
-	eof: function ()
+	set1: function (address, value)
 	{
-		return this._position >= this._storage.length; 
+		throw new Error("Not implemented!");
 	},
 	getSize: function ()
 	{
-		return this._storage.length;
+		throw new Error("Not implemented!");
 	},
-	getPosition: function ()
+	get2: function (address) //little endian  default
 	{
-		return this._position;
+		return (get1(address+1) << 8) | get1(address);
 	},
-	_p_setPosition: function (newPos)
+	get4: function (address)
 	{
-		if (newPos < 0 || newPos > this.getSize()-1)
-			throw Error("Position out of range "+newPos);
-		this._position = newPos;
+		return (get2(address+1) << 16) | get2(address);
+	},
+	set2: function (address, value)
+	{
+		set1(address, value & 0xFF);
+		set1(address+1, value >> 8);
+	},
+	set4: function (address, value)
+	{
+		set2(address, value & 0xFFFF);
+		set2(address+3, value >> 16);
 	}
-});
+	});
