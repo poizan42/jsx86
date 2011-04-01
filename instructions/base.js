@@ -26,24 +26,27 @@
 		 SIBMode: jsx86.instruction.SIBMode.none,
 		 op1Mode: jsx86.instruction.OpMode.none,
 		 op2Mode: jsx86.instruction.OpMode.none,
-		 op2Flags: {},
+		 flags: {},
 		 dispSize: jsx86.instruction.FieldLength.none,
 		 immSize: jsx86.instruction.FieldLength.none};
-	var iEvGv = {hasModRM: true,
+	var iGvEv = {hasModRM: true,
 		 SIBMode: jsx86.instruction.SIBMode.byModRM,
 		 op1Mode: jsx86.instruction.OpMode.rOperandSize,
 		 op2Mode: jsx86.instruction.OpMode.rOperandSize,
-		 op2Flags: {},
+		 flags: {},
 		 dispSize: jsx86.instruction.FieldLength.byModRM,
 		 memSize: jsx86.instruction.FieldLength.byMode,
 		 immSize: jsx86.instruction.FieldLength.none};
-	var iEbGb = unionMaps(iEvGv, {
+	var iEvGv = unionMaps(iGvEv, {flags: {ReverseArgs: true}});
+	var iGbEb = unionMaps(iEvGv, {
 		 op1Mode: jsx86.instruction.OpMode.r8,
 		 op2Mode: jsx86.instruction.OpMode.r8,
 		 memSize: jsx86.instruction.FieldLength.byMode});
+	var iEbGb = unionMaps(iGbEb, {flags: {ReverseArgs: true}});
 	var iEvSw = unionMaps(iEvGv,{
 		op1Mode: jsx86.instruction.OpMode.segment,
 		memSize: jsx86.instruction.FieldLength.one});
+	var iSwEv = unionMaps(iEvSw, {flags: {ReverseArgs: true}});
 	var iOb = unionMaps(iNone,{
 		dispSize: jsx86.instruction.FieldLength.byMode,
 		memSize: jsx86.instruction.FieldLength.one});
@@ -65,35 +68,28 @@
 		 memSize: jsx86.instruction.FieldLength.one});
 	var iEv = unionMaps(iEvGv, {
 		 op1Mode: jsx86.instruction.OpMode.none});
+	var movTrans = function (i)
+	{
+		return i.op1[1](i.op2[0])
+	}
+	var movMap = {translator: movTrans};
 	//MOV Eb,Gb 0x88
-	jsx86.instruction.registerB1Instruction(0x88,
-		unionMaps(iEbGb,
-		{translator: function (i) {return i.op2[1](i.op1[0])}}));
+	jsx86.instruction.registerB1Instruction(0x88, unionMaps(iEbGb,movMap));
 	//MOV Ev,Gv 0x89
-	jsx86.instruction.registerB1Instruction(0x89,
-		unionMaps(iEvGv,
-		{translator: function (i) {return i.op2[1](i.op1[0])}}));
+	jsx86.instruction.registerB1Instruction(0x89, unionMaps(iEvGv,movMap));
 	//MOV Gb,Eb 0x8A
-	jsx86.instruction.registerB1Instruction(0x8A,
-		unionMaps(iEbGb,
-		{translator: function (i) {return i.op1[1](i.op2[0])}}));
+	jsx86.instruction.registerB1Instruction(0x8A, unionMaps(iGbEb,movMap));
 	//MOV Gv,Ev 0x8B
-	jsx86.instruction.registerB1Instruction(0x8B,
-		unionMaps(iEvGv,
-		{translator: function (i) {return i.op1[1](i.op2[0])}}));
+	jsx86.instruction.registerB1Instruction(0x8B, unionMaps(iGvEv,movMap));
 	//MOV Ev,Sw 0x8C
-	jsx86.instruction.registerB1Instruction(0x8C,
-		unionMaps(iEvSw,{
-			translator: function (i) {return i.op2[1](i.op1[0])}}));
+	jsx86.instruction.registerB1Instruction(0x8C, unionMaps(iEvSw,movMap));
 	//LEA Gv,M 0x8D
 	jsx86.instruction.registerB1Instruction(0x8D,
-		unionMaps(iEvGv,{
-			op2Flags: {EffectiveAddress: true},
-			translator: function (i) {return i.op1[1](i.op2[0])}}));
+		unionMaps(iGvEv,{
+			flags: {EffectiveAddress: true},
+			translator: movTrans}));
 	//MOV Sw,Ev 0x8E
-	jsx86.instruction.registerB1Instruction(0x8E,
-		unionMaps(iEvSw,{
-			translator: function (i) {return i.op1[1](i.op2[0])}}));
+	jsx86.instruction.registerB1Instruction(0x8E, unionMaps(iSwEv,movMap));
 	//NOP 0x90
 	jsx86.instruction.registerB1Instruction(0x90,
 		unionMaps(iNone,{
@@ -124,8 +120,7 @@
 		var set = jsx86.instruction.r8Map[reg][1];
 		return set(i.imm);
 	}
-	var movibInf = unionMaps(iIb,{
-			translator: movib});
+	var movibInf = unionMaps(iIb,{translator: movib});
 	//MOV (r8),Ib 0xB0 - 0xB7
 	for (var i=0; i <= 7; i++)
 		jsx86.instruction.registerB1Instruction(0xB0|i,movibInf);
@@ -149,11 +144,11 @@
 	//MOV Eb,Ib 0xC6 (ext 0)
 	jsx86.instruction.registerB1InstructionEx(0xC6, 0,
 		unionMaps(iEbIb,{
-			translator: function (i) {return i.op2[1](i.imm)}}));
+			translator: function (i) {return i.op1[1](i.imm)}}));
 	//MOV Ev,Iz 0xC7 (ext 0)
 	jsx86.instruction.registerB1InstructionEx(0xC7, 0,
 		unionMaps(iEvIv,{
-			translator: function (i) {return i.op2[1](i.imm)}}));
+			translator: function (i) {return i.op1[1](i.imm)}}));
 	
 	//NOP Ev 0x0F 0D
 	/*This encoding isn't listed under the description of NOP,

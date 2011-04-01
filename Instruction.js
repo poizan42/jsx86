@@ -87,8 +87,10 @@ jsx86.instruction = {};
 		r8: 1,
 		rOperandSize: 2,
 		segment: 3,
-		mm: 4,
-		xmm: 5
+		control: 4,
+		debug: 5,
+		mm: 6,
+		xmm: 7
 	}
 	
 	//AL,CL,DL,BL,AH,CH,DH,BH
@@ -169,7 +171,7 @@ jsx86.instruction = {};
 		'c.edi'
 	];
 
-	/*Segment register map. Where is this documented??
+	/*Segment register map. Table D-8, Volume 2B
 	  es: c0 11 000 000
 	  cs: c8 11 001 000
 	  ss: d0 11 010 000
@@ -186,15 +188,37 @@ jsx86.instruction = {};
 		['c.fs', function (v){return 'c.es = '+v+';'}],
 		['c.gs', function (v){return 'c.es = '+v+';'}]
 	];
+	
+	//Control register map. Table D-9, Volume 2B
+	jsx86.instruction.ctrlMap = [
+		['c.getCr0()', function (v){return 'c.setCr0('+v+');'}],
+		undefined, //CR1? TODO: research this
+		['c.getCr2()', function (v){return 'c.setCr2('+v+');'}],
+		['c.getCr3()', function (v){return 'c.setCr3('+v+');'}],
+		['c.getCr4()', function (v){return 'c.setCr4('+v+');'}]
+	];
+
+	//Debug register map. Table D-9, Volume 2B
+	jsx86.instruction.debugMap = [
+		['c.getDr0()', function (v){return 'c.setDr0('+v+');'}],
+		['c.getDr1()', function (v){return 'c.setDr1('+v+');'}],
+		['c.getDr2()', function (v){return 'c.setDr2('+v+');'}],
+		['c.getDr3()', function (v){return 'c.setDr3('+v+');'}],
+		undefined, undefined, //DR4,DR5? TODO: research this
+		['c.getDr6()', function (v){return 'c.setDr6('+v+');'}],
+		['c.getDr7()', function (v){return 'c.setDr7('+v+');'}]
+	];
 
 	/*
-		Op2Flags: EffectiveAddress
+		Flags:
+			EffectiveAddress: No memory read. Effective address in op2[0]
+			ReverseArgs: swap op1 and op2
 	*/
 
 	//instruction maps
 	/*instruction info format:
 		{hasModRM: boolean, SIBMode: SIBMode, op1Mode: Op1Mode,
-		 op2Mode: Op2Mode, op2Flags: Op2Flags, dispSize: FieldLength,
+		 op2Mode: Op2Mode, flags: Flags, dispSize: FieldLength,
 		 immSize: FieldLength, memSize: FieldLength,
 		 translator: function (prefixes, opcode, modRM, SIB, disp, imm, op1, op2)}
 	  B1 instructions are indexed by their opcode
@@ -233,6 +257,10 @@ jsx86.instruction = {};
 						return jsx86.instruction.r32Map;
 				case jsx86.instruction.OpMode.segment:
 					return jsx86.instruction.segMap;
+				case jsx86.instruction.OpMode.control:
+					return jsx86.instruction.ctrlMap;
+				case jsx86.instruction.OpMode.debug:
+					return jsx86.instruction.debugMap;
 				case jsx86.instruction.OpMode.mm:
 					return jsx86.instruction.mmMap;
 				case jsx86.instruction.OpMode.xmm:
@@ -358,7 +386,7 @@ jsx86.instruction = {};
 			{
 				if (disp > 0)
 					op2s += '+' + disp;
-				if (i.op2Flags.EffectiveAddress)
+				if (i.flags.EffectiveAddress)
 					op2 = [op2s, null];
 				else
 				{
@@ -378,8 +406,18 @@ jsx86.instruction = {};
 				b = checkGetByte();
 				imm |= b << (n*8);
 			}
+			if (i.flags.ReverseArgs)
+			{
+				var _op1 = op2;
+				var _op2 = op1;
+			}
+			else
+			{
+				var _op1 = op1;
+				var _op2 = op2;
+			}
 			return {opcode:op, prefixes: prefixes, modRM: modRM, SIB: SIB,
-			        disp: disp, imm: imm, op1: op1, op2: op2, longOp: longOp,
+			        disp: disp, imm: imm, op1: _op1, op2: _op2, longOp: longOp,
 			        longAddr: longAddr, info: i};
 		}
 		var b;
