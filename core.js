@@ -69,7 +69,7 @@ jsx86.cpu = {
 	edi: 0,
 	ebp: 0,
 	esp: 0,
-	eflags: 0,
+	eflags: [],
 	cs: 0,
 	ds: 0,
 	ss: 0,

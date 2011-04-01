@@ -73,6 +73,120 @@
 		return i.op1[1](i.op2[0])
 	}
 	var movMap = {translator: movTrans};
+	var mask = [0, 0xFF, 0xFFFF, 0xFFFFFF, 0xFFFFFFFF];
+	var ALIbTrans = function (i,t)
+	{
+		i.op2[0] = i.imm;
+		i.op1 = jsx86.instruction.r8Map[0]
+		return t(i);		
+	}
+	var rAXIvTrans = function (i,t)
+	{
+		i.op2[0] = i.imm;
+		i.op1 = i.longOp ? jsx86.instruction.r16Map[0] :
+			jsx86.instruction.r16Map[0];
+		return t(i);
+	}
+	var transformMap(m1,transform,translator)
+	{
+		return unionMap(m1,{
+			translator: function (i)
+			{
+				return transform(i,translator)
+			}
+		});
+	}
+	var registerBinOp(op, t)
+	{
+		var map = {translator: t};
+		//* Eb,Gb  +0x00
+		jsx86.instruction.registerB1Instruction(op+0, unionMaps(iEbGb,map));
+		//* Ev,Gv  +0x01
+		jsx86.instruction.registerB1Instruction(op+1, unionMaps(iEvGv,map));
+		//* Gb,Eb  +0x02
+		jsx86.instruction.registerB1Instruction(op+2, unionMaps(iGbEb,map));
+		//* Gv,Ev  +0x03
+		jsx86.instruction.registerB1Instruction(op+3, unionMaps(iGvEv,map));
+		//* AL,Ib  +0x04
+		jsx86.instruction.registerB1Instruction(op+4, transformMap(iIb,ALIbTrans,t));
+		//* rAX,Iz +0x05
+		jsx86.instruction.registerB1Instruction(op+5, transformMap(iIv,rAXIvTrans,t));		
+	}
+	/*
+	(0x80000000|0) + (0x80000000|0) = 
+	-4294967296
+	((0x80000000|0) + (0x80000000|0) ) | 0 =
+	0
+	((0x80000000|0) + (0x80000000|0) -1) | 0 =
+	-1
+	((0x80000000|0) + (0x80000000|0) -1) =
+	-4294967297
+	((0x80000000|0) + (0x80000000|0) -1) | 0 =
+	-1
+	positive signed overflow: a+b > 2147483647
+		(a+b) | 0 < 0 < a+b 
+	negative signed overflow: a+b < -2147483648
+	 	a+b < (a+b) | 0 <= 0
+	as 0x7FFFFFFF+0x7FFFFFFF = 0xFFFFFFFE both operands
+	needs to be signed < 0 for unsigned overflow to be possible.
+	so a negative signed overflow is exactly when an unsigned overflow occours
+	*/
+	var addTrans = function (i)
+	{
+		var s = 'var v = '+i.op1[0]+'+'+i.op2[0]+';';
+		s += 'var d = v &' + mask[i.opLen] + ';';
+		s += 'c.eflags.of = v != d;';
+		s += 'c.eflags.cf = v < d;';
+	}
+	var orTrans = function (i)
+	{
+		return i.op1[1]('('+i.op1[0]+'|'+i.op2[0]+')'));
+	}
+	var adcTrans = function (i)
+	{
+		var s = 'var v = '+i.op1[0]+'+'+i.op2[0]+'+c.eflags.cf;';
+		s += 'var d = v &' + mask[i.opLen] + ';';
+		s += 'c.eflags.of = v != d;';
+		s += 'c.eflags.cf = v < d;';
+	}
+	var sbbTrans = function (i)
+	{
+		//TODO
+	}
+	var andTrans = function (i)
+	{
+		return i.op1[1]('('+i.op1[0]+'&'+i.op2[0]+')'));
+	}
+	var subTrans = function (i)
+	{
+		//TODO
+	}
+	var xorTrans = function (i)
+	{
+		return i.op1[1]('('+i.op1[0]+'^'+i.op2[0]+')'));
+	}
+	var cmpTrans = function (i)
+	{
+		//TODO
+	}
+	
+	//ADD 0x00-0x05
+	registerBinOp(0x00, addTrans);
+	//OR 0x08-0x0D
+	registerBinOp(0x08, orTrans);
+	//ADC 0x10-0x15
+	registerBinOp(0x10, adcTrans);
+	//SBB 0x18-0x1D
+	registerBinOp(0x18, sbbTrans);
+	//AND 0x20-0x25
+	registerBinOp(0x20, andTrans);
+	//SUB 0x28-0x2D
+	registerBinOp(0x28, subTrans);
+	//XOR 0x30-0x35
+	registerBinOp(0x30, xorTrans);
+	//CMP 0x38-0x3D
+	registerBinOp(0x38, subTrans);
+
 	//MOV Eb,Gb 0x88
 	jsx86.instruction.registerB1Instruction(0x88, unionMaps(iEbGb,movMap));
 	//MOV Ev,Gv 0x89

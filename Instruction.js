@@ -269,6 +269,28 @@ jsx86.instruction = {};
 					return null;
 			}
 		}
+		var getOpSize = function (m,longOp)
+		{
+			switch (m)
+			{
+				case jsx86.instruction.OpMode.r8: 
+					return 1;
+				case jsx86.instruction.OpMode.rOperandSize:
+					return longOp ? 4 : 2;
+				case jsx86.instruction.OpMode.segment:
+					return 2;
+				case jsx86.instruction.OpMode.control:
+					return 4;
+				case jsx86.instruction.OpMode.debug:
+					return 4;
+				case jsx86.instruction.OpMode.mm:
+					return 8;
+				case jsx86.instruction.OpMode.xmm:
+					return 16;
+				default:
+					return null;
+			}
+		}
 		var getFieldSize = function (size,mode,def)
 		{
 			switch (size)
@@ -416,9 +438,19 @@ jsx86.instruction = {};
 				var _op1 = op1;
 				var _op2 = op2;
 			}
+			var opLen = memSize ? memSize : (immSize ? immSize : null);
+			if (opLen == null)
+			{
+				if (!memOp2)
+					opLen = getOpSize(i.op2Mode, longOp);
+				else if (memOp2 && i.flags.EffectiveAddress)
+					opLen = getOpSize(i.op2Mode, longAddr);
+				if (!opLen)
+					opLen = getOpSize(i.op1Mode, longOp);
+			}
 			return {opcode:op, prefixes: prefixes, modRM: modRM, SIB: SIB,
 			        disp: disp, imm: imm, op1: _op1, op2: _op2, longOp: longOp,
-			        longAddr: longAddr, info: i};
+			        longAddr: longAddr, opLen: opLen, info: i};
 		}
 		var b;
 		
