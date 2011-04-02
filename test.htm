@@ -30,6 +30,17 @@
 	data[17] = [window.atob('kA=='),0];		//nop
 	data[18] = [window.atob('Dx8FAAAAAA=='),1];	//nop DWORD [0]
 	data[19] = [window.atob('Dw0FAAAAAA=='),1];	//nop DWORD [0] (alternative encoding)
+	
+	function testAddGen(a,b,c,len){
+		return jsx86._addTrans({op1:[a,function (v){return 'r = '+v+';'}],op2:[b],opLen:len},c)
+	}
+	
+	function testAdd(a,b,carry,len){
+		var r;
+		var c={eflags:{cf:0}};
+		eval(testAddGen(a,b,carry,len));
+		return [r,c.eflags.of,c.eflags.cf]
+	}
 </script>
 </head>
 <body>

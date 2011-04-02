@@ -74,6 +74,7 @@
 	}
 	var movMap = {translator: movTrans};
 	var mask = [0, 0xFF, 0xFFFF, 0xFFFFFF, 0xFFFFFFFF];
+	var smask = [0, 0x7F, 0x7FFF, 0x7FFFFF, 0x7FFFFFFF];
 	var ALIbTrans = function (i,t)
 	{
 		i.op2[0] = i.imm;
@@ -87,16 +88,16 @@
 			jsx86.instruction.r16Map[0];
 		return t(i);
 	}
-	var transformMap(m1,transform,translator)
+	var transformMap = function (m1,transform,translator)
 	{
-		return unionMap(m1,{
+		return unionMaps(m1,{
 			translator: function (i)
 			{
 				return transform(i,translator)
 			}
 		});
 	}
-	var registerBinOp(op, t)
+	var registerBinOp = function(op, t)
 	{
 		var map = {translator: t};
 		//* Eb,Gb  +0x00
@@ -130,24 +131,45 @@
 	as 0x7FFFFFFF+0x7FFFFFFF = 0xFFFFFFFE both operands
 	needs to be signed < 0 for unsigned overflow to be possible.
 	so a negative signed overflow is exactly when an unsigned overflow occours
+	For non-32 bit integers:
+	a,b >= 0 <=> repr(a),repr(b) <= 0x7F*
+		overflow if a+b > 0x7F*
+	a,b < 0 <=> repr(a),repr(b) > 0x7F*
+		overflow if unsigned overflow
 	*/
+	var _addTrans = function (i,c)
+	{
+		var o1 = '(('+i.op1[0]+')|0)';
+		var o2 = '(('+i.op2[0]+')|0)';
+		var sm = smask[i.opLen];
+		var s = 'var v = '+o1+'+'+o2+(c?'+'+c:'')+';';
+		s += 'var d = v &' + mask[i.opLen] + ';';
+		if (i.opLen == 4)
+			s += 'c.eflags.of = ('+o1+'<0||'+o2+'<0) && d>=0;';
+		else
+			s += 'c.eflags.of = v != d;';
+		if (i.opLen == 4)
+			s += 'c.eflags.cf = v < d;';
+		else
+			s += 'c.eflags.cf = '+
+			     '('+o1+'>'+sm+' && '+o2+'>'+sm+' && v<d) ||'+
+			     '('+o1+'<='+sm+' && '+o2+'<='+sm+' && d>'+sm+');';
+		s += i.op1[1]('d');
+		return s;
+	}
 	var addTrans = function (i)
 	{
-		var s = 'var v = '+i.op1[0]+'+'+i.op2[0]+';';
-		s += 'var d = v &' + mask[i.opLen] + ';';
-		s += 'c.eflags.of = v != d;';
-		s += 'c.eflags.cf = v < d;';
+		return _addTrans(i);
 	}
+	jsx86._addTrans = _addTrans;
+	
 	var orTrans = function (i)
 	{
-		return i.op1[1]('('+i.op1[0]+'|'+i.op2[0]+')'));
+		return i.op1[1]('('+i.op1[0]+'|'+i.op2[0]+')');
 	}
 	var adcTrans = function (i)
 	{
-		var s = 'var v = '+i.op1[0]+'+'+i.op2[0]+'+c.eflags.cf;';
-		s += 'var d = v &' + mask[i.opLen] + ';';
-		s += 'c.eflags.of = v != d;';
-		s += 'c.eflags.cf = v < d;';
+		return _addTrans(i,'(c.eflags.cf?1:0)');
 	}
 	var sbbTrans = function (i)
 	{
@@ -155,7 +177,7 @@
 	}
 	var andTrans = function (i)
 	{
-		return i.op1[1]('('+i.op1[0]+'&'+i.op2[0]+')'));
+		return i.op1[1]('('+i.op1[0]+'&'+i.op2[0]+')');
 	}
 	var subTrans = function (i)
 	{
@@ -163,7 +185,7 @@
 	}
 	var xorTrans = function (i)
 	{
-		return i.op1[1]('('+i.op1[0]+'^'+i.op2[0]+')'));
+		return i.op1[1]('('+i.op1[0]+'^'+i.op2[0]+')');
 	}
 	var cmpTrans = function (i)
 	{
