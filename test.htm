@@ -37,7 +37,8 @@
 	
 	function testAdd(a,b,carry,len){
 		var r;
-		var c={eflags:{cf:0}};
+		var c = {eflags:{cf:0}};
+		var u = jsx86.utils;
 		eval(testAddGen(a,b,carry,len));
 		return [r,c.eflags.of,c.eflags.cf]
 	}

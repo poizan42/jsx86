@@ -137,26 +137,45 @@
 	a,b < 0 <=> repr(a),repr(b) > 0x7F*
 		overflow if unsigned overflow
 	*/
+	//returns [result,of,cf]
+	jsx86.utils.add1 = function (a,b,c)
+	{
+		var v = a+b+c;
+		var d = v&0xFF;
+		var of = v>0xFF;
+		var cf = (a>0x7F && b>0x7F && of) ||
+		         (a<=0x7F && b<=0x7F && d>0x7F);
+		return [d,of,cf];
+	}
+	jsx86.utils.add2 = function (a,b,c)
+	{
+		var v = a+b+c;
+		var d = v&0xFFFF;
+		var of = v>0xFFFF;
+		var cf = (a>0x7FFF && b>0x7FFF && of) ||
+		         (a<=0x7FFF && b<=0x7FFF && d>0x7FFF);
+		return [d,of,cf];
+	}
+	jsx86.utils.add4 = function (a,b,c)
+	{
+		a = a|0;
+		b = b|0;
+		var v = a+b+c;
+		var d = v|0;
+		var of = (a<0||b<0) && d>=0;
+		var cf = v<d;
+		return [d,of,cf];
+	}
+
 	var _addTrans = function (i,c)
 	{
-		var o1 = '(('+i.op1[0]+')|0)';
-		var o2 = '(('+i.op2[0]+')|0)';
-		var sm = smask[i.opLen];
-		var s = 'var v = '+o1+'+'+o2+(c?'+'+c:'')+';';
-		s += 'var d = v &' + mask[i.opLen] + ';';
-		if (i.opLen == 4)
-			s += 'c.eflags.of = ('+o1+'<0||'+o2+'<0) && d>=0;';
-		else
-			s += 'c.eflags.of = v != d;';
-		if (i.opLen == 4)
-			s += 'c.eflags.cf = v < d;';
-		else
-			s += 'c.eflags.cf = '+
-			     '('+o1+'>'+sm+' && '+o2+'>'+sm+' && v<d) ||'+
-			     '('+o1+'<='+sm+' && '+o2+'<='+sm+' && d>'+sm+');';
-		s += i.op1[1]('d');
+		var s = 'var x = u.add'+i.opLen+'('+i.op1[0]+','+i.op2[0]+','+(c?c:0)+');';
+		s += i.op1[1]('x[0]');
+		s += 'c.eflags.of = x[1];';
+		s += 'c.eflags.cf = x[2];';
 		return s;
 	}
+	
 	var addTrans = function (i)
 	{
 		return _addTrans(i);

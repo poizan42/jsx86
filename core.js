@@ -77,3 +77,5 @@ jsx86.cpu = {
 	fs: 0,
 	gs: 0
 };
+
+jsx86.utils = {};
