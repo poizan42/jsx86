@@ -166,19 +166,32 @@
 		var cf = v<d;
 		return [d,of,cf];
 	}
-
-	var _addTrans = function (i,c)
+	jsx86.utils.sub1 = function (a,b,c)
 	{
-		var s = 'var x = u.add'+i.opLen+'('+i.op1[0]+','+i.op2[0]+','+(c?c:0)+');';
+		return jsx86.utils.add1(a,(0x100-b)&0xFF,c);
+	}
+	jsx86.utils.sub2 = function (a,b,c)
+	{
+		return jsx86.utils.add2(a,(0x10000-b)&0xFFFF,c);
+	}
+	jsx86.utils.sub4 = function (a,b,c)
+	{
+		return jsx86.utils.add4(a,-b,c);
+	}
+
+	var _addSubTrans = function (i,c,f)
+	{
+		var s = 'var x = u.'+f+i.opLen+'('+i.op1[0]+','+i.op2[0]+','+(c?c:0)+');';
 		s += i.op1[1]('x[0]');
 		s += 'c.eflags.of = x[1];';
 		s += 'c.eflags.cf = x[2];';
+		s += 'c.eflags.sf = x[0]<0;';
 		return s;
 	}
-	
+
 	var addTrans = function (i)
 	{
-		return _addTrans(i);
+		return _addSubTrans(i,0,'add');
 	}
 	jsx86._addTrans = _addTrans;
 	
@@ -188,11 +201,11 @@
 	}
 	var adcTrans = function (i)
 	{
-		return _addTrans(i,'(c.eflags.cf?1:0)');
+		return _addSubTrans(i,'(c.eflags.cf?1:0)','add');
 	}
 	var sbbTrans = function (i)
 	{
-		//TODO
+		return _addSubTrans(i,'(c.eflags.cf?1:0)','sub');
 	}
 	var andTrans = function (i)
 	{
@@ -200,7 +213,7 @@
 	}
 	var subTrans = function (i)
 	{
-		//TODO
+		return _addSubTrans(i,0,'sub');
 	}
 	var xorTrans = function (i)
 	{
@@ -208,7 +221,11 @@
 	}
 	var cmpTrans = function (i)
 	{
-		//TODO
+		var s = 'var x = u.sub'+i.opLen+'('+i.op1[0]+','+i.op2[0]+');';
+		s += 'c.eflags.of = x[1];';
+		s += 'c.eflags.cf = x[2];';
+		s += 'c.eflags.sf = x[0]<0;';
+		return s;
 	}
 	
 	//ADD 0x00-0x05
