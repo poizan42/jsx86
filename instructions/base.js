@@ -302,7 +302,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 		var map = i.longOp ? jsx86.instruction.r32Map :
 		                     jsx86.instruction.r16Map;
 		var op1 = map[reg];
-		var s = 'var x = u.'+f+i.opLen+'('+op[0]+',1);';
+		var s = 'var x = u.'+f+i.opLen+'('+op1[0]+',1);';
 		s += op1[1]('x[0]');
 		s += 'c.eflags.of = x[1];';
 		s += 'c.eflags.af = x[3];';
@@ -325,6 +325,40 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 	//DEC e(reg) 0x48-0x4F
 	for (var i=0; i <= 7; i++)
 		jsx86.instruction.registerB1Instruction(0x48|i,unionMaps(iNone,{translator: decTrans}));
+
+	var pushTrans = function (i)
+	{
+		var reg = i.opcode & 0x07;
+		var map = i.longOp ? jsx86.instruction.r32Map :
+		                     jsx86.instruction.r16Map;
+		var op1 = map[reg];
+		var esp = i.longOp ? jsx86.instruction.r32Map[4]:
+		                     jsx86.instruction.r16Map[4];
+		var len = i.longOp ? 4 : 2;
+		var s;
+		s = 'm.set'+len+'('+esp[0]+'-'+len+','+op1[0]+');';
+		s += esp[1]('('+esp[0]+'-'+len+')');
+	}
+	var popTrans = function (i)
+	{
+		var reg = i.opcode & 0x07;
+		var map = i.longOp ? jsx86.instruction.r32Map :
+		                     jsx86.instruction.r16Map;
+		var op1 = map[reg];
+		var esp = i.longOp ? jsx86.instruction.r32Map[4]:
+		                     jsx86.instruction.r16Map[4];
+		var len = i.longOp ? 4 : 2;
+		var s;
+		s = esp[1]('('+esp[0]+'+'+len+')');
+		s += op1[1]('m.get'+len+'('+esp[0]+'-'+len+');');
+	}
+	
+	//PUSH r(reg) 0x50-0x57
+	for (var i=0; i <= 7; i++)
+		jsx86.instruction.registerB1Instruction(0x50|i,unionMaps(iNone,{translator: pushTrans}));
+	//PUSH r(reg) 0x58-0x5F
+	for (var i=0; i <= 7; i++)
+		jsx86.instruction.registerB1Instruction(0x58|i,unionMaps(iNone,{translator: popTrans}));
 
 	//MOV Eb,Gb 0x88
 	jsx86.instruction.registerB1Instruction(0x88, unionMaps(iEbGb,movMap));
