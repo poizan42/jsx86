@@ -1,3 +1,22 @@
+/*
+x86 core instruction set
+Copyright (C) 2011 Kasper Fabæch Brandt
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
+
 (function () //non-global scope
 {
 	var getValByMode = function(src,mode)
@@ -75,13 +94,13 @@
 	var movMap = {translator: movTrans};
 	var mask = [0, 0xFF, 0xFFFF, 0xFFFFFF, 0xFFFFFFFF];
 	var smask = [0, 0x7F, 0x7FFF, 0x7FFFFF, 0x7FFFFFFF];
-	var ALIbTrans = function (i,t)
+	var ALIbTF = function (i,t)
 	{
 		i.op2[0] = i.imm;
 		i.op1 = jsx86.instruction.r8Map[0]
 		return t(i);		
 	}
-	var rAXIvTrans = function (i,t)
+	var rAXIvTF = function (i,t)
 	{
 		i.op2[0] = i.imm;
 		i.op1 = i.longOp ? jsx86.instruction.r16Map[0] :
@@ -109,10 +128,36 @@
 		//* Gv,Ev  +0x03
 		jsx86.instruction.registerB1Instruction(op+3, unionMaps(iGvEv,map));
 		//* AL,Ib  +0x04
-		jsx86.instruction.registerB1Instruction(op+4, transformMap(iIb,ALIbTrans,t));
+		jsx86.instruction.registerB1Instruction(op+4, transformMap(iIb,ALIbTF,t));
 		//* rAX,Iz +0x05
-		jsx86.instruction.registerB1Instruction(op+5, transformMap(iIv,rAXIvTrans,t));		
+		jsx86.instruction.registerB1Instruction(op+5, transformMap(iIv,rAXIvTF,t));		
 	}
+	var parityMap = [];
+	for (var i = 0; i<=0xFF; i++)
+	{
+		var c = (i&0x80)>>7 + (i&0x40)>>6 + (i&0x20)>>5 + (i&0x10)>>4 +
+		        (i&0x08)>>3 + (i&0x04)>>2 + (i&0x02)>>1 +  i&0x01;
+		parityMap[i] = !(c&1);
+	}
+	jsx86.utils.setFlags1 = function (r,flags)
+	{
+		flags.sf = !!(r & 0x80);
+		flags.zf = r == 0;
+		flags.pf = parityMap[r];
+	}
+	jsx86.utils.setFlags2 = function (r,flags)
+	{
+		flags.sf = !!(r & 0x8000);
+		flags.zf = r == 0;
+		flags.pf = parityMap[r & 0xFF];
+	}
+	jsx86.utils.setFlags4 = function (r,flags)
+	{
+		flags.sf = r < 0;
+		flags.zf = r == 0;
+		flags.pf = parityMap[r & 0xFF];
+	}
+
 	/*
 	(0x80000000|0) + (0x80000000|0) = 
 	-4294967296
@@ -145,7 +190,8 @@
 		var of = v>0xFF;
 		var cf = (a>0x7F && b>0x7F && of) ||
 		         (a<=0x7F && b<=0x7F && d>0x7F);
-		return [d,of,cf];
+		var af = (a&7)+(b&7)+c > 7;
+		return [d,of,cf,af];
 	}
 	jsx86.utils.add2 = function (a,b,c)
 	{
@@ -154,7 +200,8 @@
 		var of = v>0xFFFF;
 		var cf = (a>0x7FFF && b>0x7FFF && of) ||
 		         (a<=0x7FFF && b<=0x7FFF && d>0x7FFF);
-		return [d,of,cf];
+		var af = (a&7)+(b&7)+c > 7;
+		return [d,of,cf,af];
 	}
 	jsx86.utils.add4 = function (a,b,c)
 	{
@@ -164,7 +211,8 @@
 		var d = v|0;
 		var of = (a<0||b<0) && d>=0;
 		var cf = v<d;
-		return [d,of,cf];
+		var af = (a&7)+(b&7)+c > 7;
+		return [d,of,cf,af];
 	}
 	jsx86.utils.sub1 = function (a,b,c)
 	{
@@ -185,15 +233,17 @@
 		s += i.op1[1]('x[0]');
 		s += 'c.eflags.of = x[1];';
 		s += 'c.eflags.cf = x[2];';
-		s += 'c.eflags.sf = x[0]<0;';
+		s += 'c.eflags.af = x[3];';
+		s += 'u.setFlags'+i.opLen+'(x[0],c.eflags);';
 		return s;
 	}
+
+	jsx86.debug.addSubTrans = _addSubTrans;
 
 	var addTrans = function (i)
 	{
 		return _addSubTrans(i,0,'add');
 	}
-	jsx86._addTrans = _addTrans;
 	
 	var orTrans = function (i)
 	{
@@ -224,7 +274,8 @@
 		var s = 'var x = u.sub'+i.opLen+'('+i.op1[0]+','+i.op2[0]+');';
 		s += 'c.eflags.of = x[1];';
 		s += 'c.eflags.cf = x[2];';
-		s += 'c.eflags.sf = x[0]<0;';
+		s += 'c.eflags.af = x[3];';
+		s += 'u.setFlags'+i.opLen+'(x[0],c.eflags);';
 		return s;
 	}
 	
@@ -244,6 +295,36 @@
 	registerBinOp(0x30, xorTrans);
 	//CMP 0x38-0x3D
 	registerBinOp(0x38, subTrans);
+
+	var _incDecTrans = function (i,f)
+	{
+		var reg = i.opcode & 0x07;
+		var map = i.longOp ? jsx86.instruction.r32Map :
+		                     jsx86.instruction.r16Map;
+		var op1 = map[reg];
+		var s = 'var x = u.'+f+i.opLen+'('+op[0]+',1);';
+		s += op1[1]('x[0]');
+		s += 'c.eflags.of = x[1];';
+		s += 'c.eflags.af = x[3];';
+		s += 'u.setFlags'+i.opLen+'(x[0],c.eflags);';
+		return s;
+	}
+
+	var incTrans = function (i)
+	{
+		return _incDecTrans(i,'add');
+	}
+	var decTrans = function (i)
+	{
+		return _incDecTrans(i,'sub');
+	}
+
+	//INC e(reg) 0x40-0x47
+	for (var i=0; i <= 7; i++)
+		jsx86.instruction.registerB1Instruction(0x40|i,unionMaps(iNone,{translator: incTrans}));
+	//DEC e(reg) 0x48-0x4F
+	for (var i=0; i <= 7; i++)
+		jsx86.instruction.registerB1Instruction(0x48|i,unionMaps(iNone,{translator: decTrans}));
 
 	//MOV Eb,Gb 0x88
 	jsx86.instruction.registerB1Instruction(0x88, unionMaps(iEbGb,movMap));

@@ -79,3 +79,4 @@ jsx86.cpu = {
 };
 
 jsx86.utils = {};
+jsx86.debug = {};
