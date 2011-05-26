@@ -33,18 +33,18 @@ jsx86.instruction = {};
 	  prefix for some instructions) */
 	p[0xF3] = [1,'REP'];
 	//Group 2 - Segment override prefixes:
-	//2EH—CS segment override (use with any branch instruction is reserved)
-	p[0x2E] = [2,'CSoverride'];
-	//36H—SS segment override (use with any branch instruction is reserved)
-	p[0x36] = [2,'SSoverride'];
-	//3EH—DS segment override (use with any branch instruction is reserved)
-	p[0x3E] = [2,'DSoverride'];
 	//26H—ES segment override (use with any branch instruction is reserved)
-	p[0x26] = [2,'ESoverride'];
+	p[0x26] = [2,'ESoverride', 0];
+	//2EH—CS segment override (use with any branch instruction is reserved)
+	p[0x2E] = [2,'CSoverride', 1];
+	//36H—SS segment override (use with any branch instruction is reserved)
+	p[0x36] = [2,'SSoverride', 2];
+	//3EH—DS segment override (use with any branch instruction is reserved)
+	p[0x3E] = [2,'DSoverride', 3];
 	//64H—FS segment override (use with any branch instruction is reserved)
-	p[0x64] = [2,'FSoverride'];
+	p[0x64] = [2,'FSoverride', 4];
 	//65H—GS segment override (use with any branch instruction is reserved)
-	p[0x65] = [2,'GSoverride'];
+	p[0x65] = [2,'GSoverride', 5];
 	//— Branch hints:
 	//3EH—Branch taken (used only with Jcc instructions)
 	p[0x3E] = [2,'BranchTaken'];
@@ -92,6 +92,15 @@ jsx86.instruction = {};
 		mm: 6,
 		xmm: 7
 	}
+
+	jsx86.instruction.Segment = {
+		es: 0,
+		cs: 1,
+		ss: 2,
+		ds: 3,
+		fs: 4,
+		gs: 5
+	};
 	
 	//AL,CL,DL,BL,AH,CH,DH,BH
 	jsx86.instruction.r8Map = [
@@ -165,21 +174,13 @@ jsx86.instruction = {};
 		'c.ecx',
 		'c.edx',
 		'c.ebx',
-		'0',
+		'0', //SIB
 		'c.ebp', //or disp32 if mod==0
 		'c.esi',
 		'c.edi'
 	];
 
-	/*Segment register map. Table D-8, Volume 2B
-	  es: c0 11 000 000
-	  cs: c8 11 001 000
-	  ss: d0 11 010 000
-	  ds: d8 11 011 000
-	  fs: e0 11 100 000
-	  gs: e8 11 101 000
-	  ??: f0 11 110 000
-	  ??: f8 11 111 000*/
+	/*Segment register map. Table D-8, Volume 2B*/
 	jsx86.instruction.segMap = [
 		['c.es', function (v){return 'c.es = '+v+';'}],
 		['c.cs', function (v){return 'c.es = '+v+';'}],
@@ -322,6 +323,7 @@ jsx86.instruction = {};
 		var decodeFields = function(i,op,modRM)
 		{
 			var b;
+			var segment = jsx86.instruction.Segment.ds;
 			if (modRM == undefined)
 				var modRM = i.hasModRM ? decodeModRM() : null;
 			var SIB = null;
@@ -360,18 +362,11 @@ jsx86.instruction = {};
 					var op2s = '';
 					if (modRM.mod == 1)
 						dispSize = 1;
-					else if (modRM.mod == 2 && !longAddr)
-						dispSize = 2;
-					else if (modRM.mod == 2 && longAddr)
-						dispSize = 4;
-					if (modRM.mod == 0 && modRM.RM == 6 && !longAddr)
+					else if (modRM.mod == 2)
+						dispSize = longAddr ? 4 : 2;
+					if (modRM.mod == 0 && ((!longAddr && modRM.RM == 6) || (longAddr && modRM.RM == 5)))
 					{
-						dispSize = 2;
-						op2s = '';
-					}
-					else if (modRM.mod == 0 && modRM.RM == 6 && longAddr)
-					{
-						dispSize = 4;
+						dispSize = longAddr ? 4 : 2;
 						op2s = '';
 					}
 					else if (longAddr && modRM.RM == 4) //use SIB
@@ -379,20 +374,28 @@ jsx86.instruction = {};
 						if (SIB == null)
 							throw new Error('Unexpected SIB requirement');
 						var indexReg = jsx86.instruction.ea32Map[SIB.index];
+						if (SIB.index == 5)
+							segment = jsx86.instruction.Segment.ss;
 						var scale = 1 << SIB.scale;
 						var scaledIndex = indexReg+'*'+scale;
-						var baseReg = jsx86.instruction.ea32Map[SIB.base];
+						var baseReg = jsx86.instruction.r32Map[SIB.base][0];
 						if (SIB.base == 5 && modRM.mod == 0)
 						{
 							baseReg = '0';
 							dispSize = 4;
 						}
+						else if (SIB.base == 4 || SIB.base == 5)
+							segment = jsx86.instruction.Segment.ss;
 						op2s = scaledIndex + '+' + baseReg;
 					}
-					else if (!longAddr)
-						op2s = jsx86.instruction.ea16Map[modRM.RM];
 					else
-						op2s = jsx86.instruction.ea32Map[modRM.RM];
+					{
+						op2s = longAddr ? jsx86.instruction.ea32Map[modRM.RM]
+						                : jsx86.instruction.ea16Map[modRM.RM];
+						if ((longAddr && modRM.RM == 5) ||
+						    (!longAddr && (modRM.RM == 6) || (modRM.RM == 2) || (modRM.RM == 3)))
+							segment = jsx86.instruction.Segment.ss;
+					}
 				}
 			}
 			dispSize = getFieldSize(i.dispSize,longAddr,dispSize);
@@ -404,6 +407,10 @@ jsx86.instruction = {};
 				b = checkGetByte();
 				disp |= b << (n*8);
 			}
+			if (i.forceSeg != undefined)
+				segment = i.forceSeg;
+			else if (pgroups[2] != undefined)
+				segment = pgroups[2][2];
 			if (memOp2)
 			{
 				if (disp > 0)
@@ -417,7 +424,7 @@ jsx86.instruction = {};
 						throw Error('Memory operand, but memSize is 0');
 					op2 = [
 						'm.get'+memSize+'('+op2s+')',
-						function (v) { return 'm.set'+memSize+'('+op2s+','+v+');' }
+						function (v) { return 'm.set'+memSize+'('+op2s+','+v+','+segment+');' }
 					];
 				}
 			}
@@ -450,7 +457,8 @@ jsx86.instruction = {};
 			}
 			return {opcode:op, prefixes: prefixes, modRM: modRM, SIB: SIB,
 			        disp: disp, imm: imm, op1: _op1, op2: _op2, longOp: longOp,
-			        longAddr: longAddr, opLen: opLen, info: i};
+			        longAddr: longAddr, longMode: longMode, opLen: opLen,
+			        segment: segment, info: i};
 		}
 		var b;
 		
